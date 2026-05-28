@@ -439,35 +439,20 @@ function clearWorldElements(){
 }
 
 function doUnlock(n){
-  if(n===1)  { document.getElementById('moon').classList.add('on'); document.getElementById('sky').classList.add('dawn'); }
-  if(n===2)  { document.getElementById('mountains').style.opacity='1'; }
-  if(n===3)  { addTree(); }
-  if(n===4)  { document.getElementById('river').style.opacity='1'; }
-  if(n===5)  { addTree(); addTree(); }
-  if(n===6)  { addFlowers(); }
-  if(n===7)  { addAnimal('🦋',15); }
-  if(n===8)  { addClouds(); }
-  if(n===9)  { addTree(true); addTree(true); addTree(true); }
-  if(n===10) { document.getElementById('moon').style.opacity='0'; document.getElementById('sun').classList.add('on'); document.getElementById('sky').classList.remove('dawn'); document.getElementById('sky').classList.add('day'); document.getElementById('stars').style.opacity='0'; document.getElementById('ground').classList.add('alive'); }
-  if(n===11) { addAnimal('🦌',25); }
-  if(n===12) { addFireflies(); }
-  if(n===13) { addAnimal('🦅',60); }
-  if(n===14) { document.getElementById('aurora').style.opacity='1'; }
-  if(n===15) { setTimeout(nextScenario, 1500); }
+  SCENARIOS[currentScenario].doUnlock(n);
 }
 
 function nextScenario(){
   currentScenario++;
-  if(currentScenario>=SCENARIOS.length){ currentScenario=1; } // cycle
-  // Reset unlocks counter so world rebuilds
+  if(currentScenario>=SCENARIOS.length){ currentScenario=0; }
   correct=0; qInLevel=0; currentLevel=0;
   clearWorldElements();
   setTimeout(function(){
     var sc=SCENARIOS[currentScenario];
-    sc.apply();
-    showToast('🌍','NUEVO ESCENARIO',sc.name);
-    setNarrative('El mundo renace... '+sc.name);
+    showToast(sc.icon,'NUEVO ESCENARIO: '+sc.name,'El mundo renace...');
+    setNarrative('✨ '+sc.name+' ✨');
     updateProgress();
+    updateLevelDisplay();
   }, 1000);
 }
 
@@ -482,8 +467,8 @@ function addTree(tall){
   setTimeout(function(){ tree.classList.add('on'); },100);
 }
 
-function addFlowers(){
-  var emojis=['🌸','🌼','🌺','💐','🌻'];
+function addFlowers(emojis){
+  emojis=emojis||['🌸','🌼','🌺','💐','🌻'];
   for(var i=0;i<6;i++){
     (function(i){
       var f=document.createElement('div'); f.className='flower';
@@ -513,10 +498,13 @@ function addClouds(){
   }
 }
 
-function addFireflies(){
+function addFireflies(color){
+  color=color||'#aaff88';
   for(var i=0;i<12;i++){
     var f=document.createElement('div'); f.className='firefly on';
-    f.style.cssText='left:'+rnd(10,85)+'%;bottom:'+rnd(30,55)+'%;--dur:'+(3+Math.random()*4)+'s;--dx:'+rnd(-40,40)+'px;--dy:'+rnd(-50,-10)+'px;animation-delay:'+Math.random()*5+'s';
+    f.style.background=color;
+    f.style.boxShadow='0 0 6px '+color;
+    f.style.cssText+=';left:'+rnd(10,85)+'%;bottom:'+rnd(30,55)+'%;--dur:'+(3+Math.random()*4)+'s;--dx:'+rnd(-40,40)+'px;--dy:'+rnd(-50,-10)+'px;animation-delay:'+Math.random()*5+'s';
     document.getElementById('world').appendChild(f);
   }
 }
@@ -589,8 +577,9 @@ function answer(sym){
 }
 
 function checkUnlock(n){
-  for(var i=0;i<UNLOCKS.length;i++){
-    if(UNLOCKS[i].at===n){ doUnlock(n); showToast(UNLOCKS[i].icon,UNLOCKS[i].title,UNLOCKS[i].desc); setNarrative(UNLOCKS[i].desc); break; }
+  var unlocks=getUnlocks();
+  for(var i=0;i<unlocks.length;i++){
+    if(unlocks[i].at===n){ doUnlock(n); showToast(unlocks[i].icon,unlocks[i].title,unlocks[i].desc); setNarrative(unlocks[i].desc); break; }
   }
 }
 
@@ -611,7 +600,8 @@ function updateLives(){
 }
 
 function updateProgress(){
-  var pct=Math.min(100,Math.round(correct/UNLOCKS.length*100));
+  var total=getUnlocks().length;
+  var pct=Math.min(100,Math.round(correct/total*100));
   document.getElementById('prog-bar').style.width=pct+'%';
 }
 
