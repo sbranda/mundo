@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Constructor de Mundos</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Pro:ital,wght@0,400;1,400&display=swap');
+:root {
+  --gold:#c9a84c; --gold2:#e8c870; --text:#f0e8d0; --muted:#8a7a5a;
+  --ok:#5aaa6a; --bad:#cc4444; --bg:#0a0614;
+  --surface:rgba(10,6,20,0.88); --border:rgba(201,168,76,0.22);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Crimson Pro',serif;background:var(--bg);color:var(--text);min-height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+#world{position:fixed;inset:0;overflow:hidden;z-index:0;}
+.sky{position:absolute;inset:0;background:linear-gradient(180deg,#0a0614 0%,#1a0a2e 60%,#2d1a0a 100%);transition:background 3s ease;}
+.sky.dawn{background:linear-gradient(180deg,#1a0a2e 0%,#3d1a4a 30%,#8b3a3a 70%,#2d1a0a 100%);}
+.sky.day{background:linear-gradient(180deg,#0a2040 0%,#1a4a7a 40%,#4a8aaa 70%,#2a5a3a 100%);}
+.sky.night2{background:linear-gradient(180deg,#000510 0%,#001030 60%,#0a0520 100%);}
+.stars{position:absolute;inset:0;opacity:1;transition:opacity 3s ease;}
+.star{position:absolute;background:white;border-radius:50%;animation:twinkle var(--dur,3s) ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.moon{position:absolute;top:12%;right:15%;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff9e0,#d4c97a);box-shadow:0 0 20px rgba(212,201,122,.4);opacity:0;transition:opacity 2s ease;}
+.moon.on{opacity:1;}
+.sun{position:absolute;top:15%;left:20%;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#fff5a0,#ffaa00);box-shadow:0 0 30px rgba(255,200,0,.6);opacity:0;transition:opacity 3s ease;animation:sunPulse 4s ease-in-out infinite;}
+.sun.on{opacity:1;}
+@keyframes sunPulse{0%,100%{box-shadow:0 0 30px rgba(255,200,0,.6)}50%{box-shadow:0 0 50px rgba(255,220,0,.8)}}
+.mountains{position:absolute;bottom:30%;left:0;right:0;height:40%;opacity:0;transition:opacity 3s ease;}
+.mountain{position:absolute;bottom:0;width:0;height:0;border-style:solid;}
+.m1{left:5%;border-width:0 80px 160px 80px;border-color:transparent transparent #2a1f3d transparent;}
+.m2{left:18%;border-width:0 120px 220px 120px;border-color:transparent transparent #1e1530 transparent;}
+.m3{right:10%;border-width:0 100px 190px 100px;border-color:transparent transparent #261c3a transparent;}
+.m4{right:25%;border-width:0 70px 140px 70px;border-color:transparent transparent #2a1f3d transparent;}
+.snow{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-style:solid;border-width:0 18px 30px 18px;border-color:transparent transparent rgba(220,230,255,.8) transparent;}
+.ground{position:absolute;bottom:0;left:0;right:0;height:32%;background:linear-gradient(180deg,#1a0f05 0%,#0f0a03 100%);transition:background 3s ease;}
+.ground.alive{background:linear-gradient(180deg,#1a3a0a 0%,#0f1f05 100%);}
+.ground.snow-ground{background:linear-gradient(180deg,#c8d8e8 0%,#a0b8c8 100%);}
+.ground.ocean{background:linear-gradient(180deg,#1a3a6a 0%,#0a1a3a 100%);}
+.river{position:absolute;bottom:28%;left:30%;width:12%;height:35%;background:linear-gradient(180deg,rgba(74,122,181,.8),rgba(74,122,181,.4));border-radius:40% 40% 0 0;opacity:0;transition:opacity 2s ease;}
+.tree{position:absolute;bottom:30%;display:flex;flex-direction:column;align-items:center;opacity:0;transform:scaleY(0);transform-origin:bottom;transition:opacity 1s ease,transform 1s cubic-bezier(.34,1.56,.64,1);}
+.tree.on{opacity:1;transform:scaleY(1);}
+.trunk{background:linear-gradient(180deg,#5a3a1a,#3a2010);border-radius:2px;}
+.leaf{width:0;height:0;border-style:solid;margin-bottom:-2px;}
+.leaf2{margin-top:-10px;}
+.flower{position:absolute;bottom:30%;font-size:1.2rem;opacity:0;transition:opacity 1s ease;animation:sway 2s ease-in-out infinite;}
+.flower.on{opacity:1;}
+@keyframes sway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+.animal{position:absolute;font-size:1.8rem;opacity:0;transition:opacity 1.5s ease;animation:walk 8s ease-in-out infinite;}
+.animal.on{opacity:1;}
+@keyframes walk{0%{transform:translateX(0) scaleX(1)}45%{transform:translateX(40px) scaleX(1)}50%{transform:translateX(40px) scaleX(-1)}95%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(0) scaleX(1)}}
+.aurora{position:absolute;top:10%;left:0;right:0;height:40%;opacity:0;transition:opacity 3s ease;pointer-events:none;}
+.aurora-band{position:absolute;left:-20%;right:-20%;height:100px;border-radius:50%;filter:blur(30px);animation:auroraMove var(--dur,6s) ease-in-out infinite;}
+@keyframes auroraMove{0%,100%{transform:translateY(0) scaleX(1);opacity:.4}50%{transform:translateY(-20px) scaleX(1.1);opacity:.7}}
+.cloud{position:absolute;border-radius:50px;background:rgba(255,255,255,.15);filter:blur(4px);opacity:0;transition:opacity 2s ease;animation:drift var(--dur,20s) linear infinite;}
+.cloud.on{opacity:1;}
+@keyframes drift{0%{transform:translateX(-10%)}100%{transform:translateX(110%)}}
+.firefly{position:absolute;width:4px;height:4px;border-radius:50%;background:#aaff88;box-shadow:0 0 6px #aaff88;opacity:0;animation:ffloat var(--dur,4s) ease-in-out infinite;}
+.firefly.on{opacity:1;}
+@keyframes ffloat{0%{transform:translate(0,0);opacity:0}20%{opacity:.8}50%{transform:translate(var(--dx,20px),var(--dy,-30px));opacity:.6}80%{opacity:.8}100%{transform:translate(0,0);opacity:0}}
+.snowflake{position:absolute;top:-10%;font-size:1rem;opacity:0;animation:snowfall var(--dur,6s) linear infinite;}
+.snowflake.on{opacity:1;}
+@keyframes snowfall{0%{transform:translateY(0) rotate(0deg);opacity:.8}100%{transform:translateY(110vh) rotate(360deg);opacity:0}}
+
+#ui{position:fixed;top:0;left:0;right:0;z-index:10;pointer-events:none;}
+#bottom-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;pointer-events:all;}
+.top-bar{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 14px;pointer-events:all;}
+.game-title{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);letter-spacing:2px;text-shadow:0 0 20px rgba(201,168,76,.4);}
+.stats{display:flex;gap:10px;font-size:.68rem;color:var(--muted);letter-spacing:1px;}
+.stat-val{color:var(--gold);font-weight:700;}
+.narrative{padding:4px 14px;text-align:center;font-style:italic;font-size:.8rem;color:var(--text);opacity:.85;min-height:24px;transition:opacity .5s;text-shadow:0 1px 8px rgba(0,0,0,.8);pointer-events:none;}
+.prog-wrap{height:3px;background:rgba(201,168,76,.1);}
+.prog-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .5s ease;box-shadow:0 0 8px rgba(201,168,76,.5);}
+.qpanel{background:var(--surface);border-top:2px solid var(--gold);padding:12px 14px 14px;backdrop-filter:blur(10px);}
+.qtext{font-family:'Cinzel',serif;font-size:.7rem;text-align:center;color:var(--muted);margin-bottom:8px;line-height:1.5;white-space:pre-line;}
+.nums-row{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:10px;}
+.num{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,.5);min-width:55px;text-align:center;}
+.vsym{font-family:'Cinzel',serif;font-size:1.6rem;color:var(--muted);min-width:44px;text-align:center;transition:color .3s;}
+.vsym.revealed{color:var(--gold2);}
+.ans-btns{display:grid;gap:6px;}
+.ans-btn{background:rgba(201,168,76,.08);border:1px solid var(--border);color:var(--text);font-family:'Cinzel',serif;font-size:1.1rem;padding:10px 6px;cursor:pointer;transition:all .2s;letter-spacing:1px;}
+.ans-btn:hover{background:rgba(201,168,76,.18);border-color:var(--gold);}
+.ans-btn:active{transform:scale(.97);}
+.ans-btn.ok{background:rgba(90,170,106,.3);border-color:var(--ok);color:var(--ok);}
+.ans-btn.bad{background:rgba(204,68,68,.3);border-color:var(--bad);color:var(--bad);}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,6,20,.95);border:1px solid var(--gold);padding:20px 32px;text-align:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .4s;}
+.toast.on{opacity:1;}
+.t-icon{font-size:2.5rem;margin-bottom:8px;}
+.t-title{font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);letter-spacing:3px;margin-bottom:4px;}
+.t-desc{font-size:.85rem;color:var(--muted);font-style:italic;}
+.screen{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,6,20,.95);gap:20px;transition:opacity .5s;}
+.screen.hide{opacity:0;pointer-events:none;}
+.s-title{font-family:'Cinzel',serif;font-size:2.2rem;color:var(--gold);letter-spacing:6px;text-align:center;text-shadow:0 0 30px rgba(201,168,76,.4);}
+.s-sub{font-size:1rem;color:var(--muted);font-style:italic;text-align:center;max-width:300px;line-height:1.7;}
+.s-preview{font-size:3rem;letter-spacing:8px;}
+.gold-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.9rem;padding:14px 36px;cursor:pointer;letter-spacing:4px;transition:all .2s;margin-top:8px;}
+.gold-btn:hover{background:rgba(201,168,76,.1);box-shadow:0 0 20px rgba(201,168,76,.2);}
+.end-score{font-family:'Cinzel',serif;color:var(--gold);font-size:1.5rem;}
+</style>
+</head>
+<body>
+<div id="world">
+  <div class="sky" id="sky"></div>
+  <div class="stars" id="stars"></div>
+  <div class="moon" id="moon"></div>
+  <div class="sun" id="sun"></div>
+  <div class="aurora" id="aurora">
+    <div class="aurora-band" style="top:10%;background:rgba(100,200,150,.3);--dur:7s"></div>
+    <div class="aurora-band" style="top:30%;background:rgba(150,100,220,.2);--dur:9s;animation-delay:-3s"></div>
+    <div class="aurora-band" style="top:55%;background:rgba(80,180,220,.2);--dur:11s;animation-delay:-5s"></div>
+  </div>
+  <div class="mountains" id="mountains">
+    <div class="mountain m1"><div class="snow"></div></div>
+    <div class="mountain m2"><div class="snow"></div></div>
+    <div class="mountain m3"><div class="snow"></div></div>
+    <div class="mountain m4"></div>
+  </div>
+  <div class="river" id="river"></div>
+  <div class="ground" id="ground"></div>
+</div>
+<div id="ui">
+  <div class="top-bar">
+    <div class="game-title">Constructor de Mundos</div>
+    <div class="stats">
+      <span>VIDAS <span class="stat-val" id="lives-el">❤️❤️❤️</span></span>
+      <span><span class="stat-val" id="level-el">Nv.1</span></span>
+    </div>
+  </div>
+  <div class="narrative" id="narrative-el">El mundo aguarda tu voz...</div>
+</div>
+<div id="bottom-panel">
+  <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+  <div class="qpanel">
+    <div class="qtext" id="qtext-el">Elegí el símbolo correcto</div>
+    <div class="nums-row">
+      <div class="num" id="num-a">—</div>
+      <div class="vsym" id="vsym-el">?</div>
+      <div class="num" id="num-b">—</div>
+    </div>
+    <div class="ans-btns" id="ans-btns"></div>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <div class="t-icon" id="t-icon">🌿</div>
+  <div class="t-title" id="t-title">DESBLOQUEADO</div>
+  <div class="t-desc" id="t-desc">Algo nuevo aparece</div>
+</div>
+<div class="screen" id="start-screen">
+  <div class="s-preview">🌑🌿🌲</div>
+  <div class="s-title">CONSTRUCTOR<br>DE MUNDOS</div>
+  <div class="s-sub">Un mundo vacío espera. Respondé correctamente para darle vida. Los símbolos van aumentando de dificultad.</div>
+  <button class="gold-btn" id="btn-start">CREAR MUNDO</button>
+</div>
+<div class="screen hide" id="end-screen">
+  <div class="s-preview" id="end-preview">🌑</div>
+  <div class="s-title" id="end-title">TU MUNDO</div>
+  <div class="s-sub" id="end-msg">El mundo ha sido creado.</div>
+  <div class="end-score" id="end-score">0 elementos</div>
+  <button class="gold-btn" id="btn-restart">CREAR OTRO</button>
+</div>
+
+<script>
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+// Build question with explicit correct answer
+function buildQ(a, b, pool, la, lb){
+  // Find which symbols in the pool are true for a,b
+  var correct = null;
+  // Evaluate each symbol
+  var evals = {
+    '>':  a > b,
+    '<':  a < b,
+    '=':  a === b,
+    '>=': a >= b,
+    '<=': a <= b
+  };
+  // Pick a random valid symbol from pool as the correct answer
+  var validInPool = pool.filter(function(s){ return evals[s]; });
+  if(validInPool.length > 0){
+    correct = pick(validInPool);
+  } else {
+    correct = a > b ? '>' : a < b ? '<' : '=';
+    pool = pool.concat([correct]);
+  }
+  var buttons = pool.slice().sort(function(){ return Math.random()-.5; });
+  var hasComp = pool.indexOf('>=')!==-1 || pool.indexOf('<=')!==-1;
+  var text = hasComp
+    ? '¿Qué símbolo es correcto?\n>= mayor o igual     <= menor o igual'
+    : '¿Cuál va en el medio?\n> mayor     < menor     = igual';
+  return {
+    text: text,
+    leftLabel: la!==undefined ? String(la) : String(a),
+    rightLabel: lb!==undefined ? String(lb) : String(b),
+    correct: correct,
+    buttons: buttons
+  };
+}
+
+// ── LEVELS ────────────────────────────────────────────────────────────────────
+var LEVELS = [
+  { num:1, name:'El Amanecer',  desc:'Los primeros números despiertan el mundo...', toNext:5,
+    gen:function(){ var a=rnd(1,50),b=rnd(1,50); return buildQ(a,b,['>','<','=']); }
+  },
+  { num:2, name:'La Expansión', desc:'Números grandes. Aparece ≥.', toNext:5,
+    gen:function(){
+      // Sometimes force equal numbers so >= is clearly correct
+      var forceGte = Math.random() > 0.5;
+      var a = rnd(10,200);
+      var b = forceGte ? a : rnd(10,200);
+      var pool = forceGte ? ['>','>=','<'] : ['>','<','='];
+      return buildQ(a,b,pool);
+    }
+  },
+  { num:3, name:'El Abismo', desc:'Negativos. Y ahora también ≤.', toNext:5,
+    gen:function(){
+      var forceLte = Math.random() > 0.5;
+      var a = rnd(-50,30);
+      var b = forceLte ? a : rnd(-50,30);
+      var pool = forceLte ? ['<','<=','>'] : ['>','>=','<','='];
+      return buildQ(a,b,pool);
+    }
+  },
+  { num:4, name:'La Precisión', desc:'Decimales. Todos los símbolos en juego.', toNext:5,
+    gen:function(){
+      var type = rnd(0,2);
+      var a,b,pool;
+      if(type===0){ // force >= scenario
+        a = parseFloat((rnd(10,99)/10).toFixed(1)); b = a;
+        pool = ['>=','<','='];
+      } else if(type===1){ // force <= scenario
+        a = parseFloat((rnd(10,99)/10).toFixed(1)); b = a;
+        pool = ['>','<=','='];
+      } else {
+        a = parseFloat((rnd(10,99)/10).toFixed(1));
+        b = parseFloat((rnd(10,99)/10).toFixed(1));
+        pool = ['>','>=','<=','<'];
+      }
+      return buildQ(a,b,pool,a.toFixed(1),b.toFixed(1));
+    }
+  },
+  { num:5, name:'El Caos', desc:'Negativos, decimales y todos los símbolos.', toNext:999,
+    gen:function(){
+      var dec = Math.random() > 0.4;
+      var forceEqual = Math.random() > 0.6;
+      var a = dec ? parseFloat((rnd(-50,50)/10).toFixed(1)) : rnd(-200,200);
+      var b = forceEqual ? a : (dec ? parseFloat((rnd(-50,50)/10).toFixed(1)) : rnd(-200,200));
+      var pools = [['>','>=','<='],['>','<','>=','<='],['>','>=','<=','='],['>','<','>=']];
+      var pool = pick(pools);
+      var fmt = function(n){ return dec ? n.toFixed(1) : String(n); };
+      return buildQ(a,b,pool,fmt(a),fmt(b));
+    }
+  }
+];
+
+// ── SCENARIOS ─────────────────────────────────────────────────────────────────
+var SCENARIOS = [
+  {
+    name:'Bosque Fantasía', icon:'🌿',
+    sky:'dawn', ground:'alive',
+    unlocks:[
+      { at:1,  icon:'🌙', title:'LA LUNA',        desc:'La luna ilumina el vacío oscuro.' },
+      { at:2,  icon:'⛰️', title:'LAS MONTAÑAS',   desc:'Las montañas emergen del silencio.' },
+      { at:3,  icon:'🌱', title:'PRIMER ÁRBOL',   desc:'La vida toma forma por primera vez.' },
+      { at:4,  icon:'🌊', title:'EL RÍO',         desc:'Un río susurra entre las piedras.' },
+      { at:5,  icon:'🌳', title:'BOSQUE JOVEN',   desc:'Los árboles buscan el cielo.' },
+      { at:6,  icon:'🌸', title:'LAS FLORES',     desc:'El color llega al mundo.' },
+      { at:7,  icon:'🦋', title:'LAS MARIPOSAS',  desc:'Las mariposas danzan en el alba.' },
+      { at:8,  icon:'☁️', title:'LAS NUBES',      desc:'Las nubes viajan por el cielo.' },
+      { at:9,  icon:'🌲', title:'BOSQUE ANTIGUO', desc:'Árboles milenarios despiertan.' },
+      { at:10, icon:'☀️', title:'EL SOL',         desc:'El sol nace. El mundo amanece.' },
+      { at:11, icon:'🦌', title:'EL CIERVO',      desc:'Un ciervo camina entre los árboles.' },
+      { at:12, icon:'✨', title:'LUCIÉRNAGAS',    desc:'La noche se llena de pequeñas luces.' },
+      { at:13, icon:'🦅', title:'EL ÁGUILA',      desc:'Un águila surca los cielos.' },
+      { at:14, icon:'🌈', title:'LA AURORA',      desc:'La aurora boreal pinta el cielo.' },
+      { at:15, icon:'🏰', title:'MUNDO COMPLETO', desc:'El bosque cobra vida. Nuevo mundo...' },
+    ],
+    doUnlock:function(n){
+      if(n===1)  { document.getElementById('moon').classList.add('on'); document.getElementById('sky').classList.add('dawn'); }
+      if(n===2)  { document.getElementById('mountains').style.opacity='1'; }
+      if(n===3)  { addTree(); }
+      if(n===4)  { document.getElementById('river').style.opacity='1'; }
+      if(n===5)  { addTree(); addTree(); }
+      if(n===6)  { addFlowers(['🌸','🌼','🌺','💐','🌻']); }
+      if(n===7)  { addAnimal('🦋',15); }
+      if(n===8)  { addClouds(); }
+      if(n===9)  { addTree(true); addTree(true); addTree(true); }
+      if(n===10) { document.getElementById('moon').style.opacity='0'; document.getElementById('sun').classList.add('on'); document.getElementById('sky').classList.remove('dawn'); document.getElementById('sky').classList.add('day'); document.getElementById('stars').style.opacity='0'; document.getElementById('ground').classList.add('alive'); }
+      if(n===11) { addAnimal('🦌',25); }
+      if(n===12) { addFireflies('#aaff88'); }
+      if(n===13) { addAnimal('🦅',60); }
+      if(n===14) { document.getElementById('aurora').style.opacity='1'; }
+      if(n===15) { setTimeout(nextScenario,1500); }
+    }
+  },
+  {
+    name:'Invierno Eterno', icon:'❄️',
+    unlocks:[
+      { at:1,  icon:'🌨️', title:'PRIMERA NIEVE',   desc:'Los primeros copos caen en silencio.' },
+      { at:2,  icon:'⛰️', title:'MONTAÑAS NEVADAS', desc:'Las cumbres se cubren de blanco.' },
+      { at:3,  icon:'🌲', title:'PINO HELADO',      desc:'Un pino solitario resiste el frío.' },
+      { at:4,  icon:'🧊', title:'RÍO CONGELADO',    desc:'El río se congela bajo el hielo.' },
+      { at:5,  icon:'🐧', title:'LOS PINGÜINOS',    desc:'Los pingüinos llegan marchando.' },
+      { at:6,  icon:'🏔️', title:'GLACIAR',          desc:'Un glaciar eterno surge del norte.' },
+      { at:7,  icon:'🦊', title:'EL ZORRO ÁRTICO',  desc:'Un zorro blanco cruza la tundra.' },
+      { at:8,  icon:'☁️', title:'NUBES DE TORMENTA',desc:'Las nubes traen más nieve.' },
+      { at:9,  icon:'🌲', title:'BOSQUE HELADO',    desc:'Un bosque de pinos bajo la nieve.' },
+      { at:10, icon:'🌕', title:'LUNA POLAR',       desc:'La luna llena ilumina el hielo.' },
+      { at:11, icon:'🐻', title:'OSO POLAR',        desc:'Un oso polar camina majestuoso.' },
+      { at:12, icon:'✨', title:'CRISTALES DE HIELO',desc:'El hielo brilla como diamantes.' },
+      { at:13, icon:'🦅', title:'ÁGUILA NEVADA',    desc:'Un águila surca el cielo ártico.' },
+      { at:14, icon:'🌌', title:'AURORA BOREAL',    desc:'La aurora ilumina la noche polar.' },
+      { at:15, icon:'🏰', title:'REINO DE HIELO',   desc:'El reino helado está completo. Nuevo mundo...' },
+    ],
+    doUnlock:function(n){
+      if(n===1)  { addSnowflakes(); document.getElementById('sky').classList.add('night2'); document.getElementById('ground').classList.add('snow-ground'); }
+      if(n===2)  { document.getElementById('mountains').style.opacity='1'; }
+      if(n===3)  { addTree(); }
+      if(n===4)  { document.getElementById('river').style.opacity='1'; }
+      if(n===5)  { addAnimal('🐧',31); addAnimal('🐧',31); }
+      if(n===6)  { addTree(true); addTree(true); }
+      if(n===7)  { addAnimal('🦊',31); }
+      if(n===8)  { addClouds(); }
+      if(n===9)  { addTree(true); addTree(true); addTree(true); }
+      if(n===10) { document.getElementById('moon').classList.add('on'); }
+      if(n===11) { addAnimal('🐻',32); }
+      if(n===12) { addFireflies('#aaddff'); }
+      if(n===13) { addAnimal('🦅',60); }
+      if(n===14) { document.getElementById('aurora').style.opacity='1'; }
+      if(n===15) { setTimeout(nextScenario,1500); }
+    }
+  },
+  {
+    name:'Mundo Oceánico', icon:'🌊',
+    unlocks:[
+      { at:1,  icon:'🌊', title:'EL OCÉANO',       desc:'Las aguas cubren la tierra.' },
+      { at:2,  icon:'🪸', title:'LOS CORALES',     desc:'Los corales colorean el fondo.' },
+      { at:3,  icon:'🐠', title:'PEZ PAYASO',      desc:'Un pez payaso nada entre corales.' },
+      { at:4,  icon:'🦑', title:'EL CALAMAR',      desc:'Un calamar brilla en las profundidades.' },
+      { at:5,  icon:'🐬', title:'LOS DELFINES',    desc:'Los delfines saltan con alegría.' },
+      { at:6,  icon:'🌺', title:'ANÉMONAS',        desc:'Las anémonas florecen en el fondo.' },
+      { at:7,  icon:'🐙', title:'EL PULPO',        desc:'Un pulpo cambia de color.' },
+      { at:8,  icon:'☁️', title:'NUBES MARINAS',   desc:'Las nubes reflejan el mar.' },
+      { at:9,  icon:'🦈', title:'EL TIBURÓN',      desc:'Un tiburón cruza las aguas.' },
+      { at:10, icon:'☀️', title:'SOL TROPICAL',    desc:'El sol calienta las aguas cristalinas.' },
+      { at:11, icon:'🐋', title:'LA BALLENA',      desc:'Una ballena azul surge del océano.' },
+      { at:12, icon:'✨', title:'BIOLUMINISCENCIA', desc:'El mar brilla en la oscuridad.' },
+      { at:13, icon:'🦅', title:'PELÍCANO',        desc:'Un pelícano vuela sobre las olas.' },
+      { at:14, icon:'🌈', title:'ARCOÍRIS MARINO', desc:'Un arcoíris toca el océano.' },
+      { at:15, icon:'🏝️', title:'PARAÍSO OCEÁNICO',desc:'El océano está completo. Nuevo mundo...' },
+    ],
+    doUnlock:function(n){
+      if(n===1)  { document.getElementById('sky').classList.add('day'); document.getElementById('ground').classList.add('ocean'); document.getElementById('river').style.opacity='1'; }
+      if(n===2)  { addFlowers(['🪸','🪸','🌺','🌸','🌼']); }
+      if(n===3)  { addAnimal('🐠',33); addAnimal('🐠',36); }
+      if(n===4)  { addAnimal('🦑',34); }
+      if(n===5)  { addAnimal('🐬',38); addAnimal('🐬',35); }
+      if(n===6)  { addFlowers(['🌺','🌺','🪸','🌸','🌺']); }
+      if(n===7)  { addAnimal('🐙',32); }
+      if(n===8)  { addClouds(); }
+      if(n===9)  { addAnimal('🦈',35); }
+      if(n===10) { document.getElementById('sun').classList.add('on'); document.getElementById('stars').style.opacity='0'; }
+      if(n===11) { addAnimal('🐋',42); }
+      if(n===12) { addFireflies('#44aaff'); addFireflies('#44ffaa'); }
+      if(n===13) { addAnimal('🦅',62); }
+      if(n===14) { document.getElementById('aurora').style.opacity='1'; }
+      if(n===15) { setTimeout(nextScenario,1500); }
+    }
+  },
+  {
+    name:'Galaxia Mágica', icon:'🌌',
+    unlocks:[
+      { at:1,  icon:'🌙', title:'LA LUNA',         desc:'La luna flota en el vacío cósmico.' },
+      { at:2,  icon:'⭐', title:'LAS ESTRELLAS',   desc:'Miles de estrellas llenan el cielo.' },
+      { at:3,  icon:'🪐', title:'EL PLANETA',      desc:'Un planeta anillado aparece.' },
+      { at:4,  icon:'☄️', title:'EL COMETA',       desc:'Un cometa cruza la galaxia.' },
+      { at:5,  icon:'🚀', title:'LA NAVE',         desc:'Una nave espacial despega.' },
+      { at:6,  icon:'🌌', title:'NEBULOSA',        desc:'Una nebulosa colorea el espacio.' },
+      { at:7,  icon:'👾', title:'EL ALIEN',        desc:'Una criatura alienígena aparece.' },
+      { at:8,  icon:'🛸', title:'OVNI',            desc:'Un ovni sobrevuela la galaxia.' },
+      { at:9,  icon:'🌠', title:'LLUVIA DE ESTRELLAS', desc:'Las estrellas caen como lluvia.' },
+      { at:10, icon:'🌞', title:'LA ESTRELLA',     desc:'Una estrella gigante ilumina todo.' },
+      { at:11, icon:'🤖', title:'EL ROBOT',        desc:'Un robot explorador camina.' },
+      { at:12, icon:'✨', title:'POLVO ESTELAR',   desc:'El polvo de estrellas brilla.' },
+      { at:13, icon:'🦅', title:'FÉNIX CÓSMICO',  desc:'Un fénix de luz cruza el cosmos.' },
+      { at:14, icon:'🌈', title:'AURORA CÓSMICA',  desc:'Los colores del cosmos explotan.' },
+      { at:15, icon:'🏰', title:'GALAXIA COMPLETA',desc:'La galaxia vive. Nuevo mundo...' },
+    ],
+    doUnlock:function(n){
+      if(n===1)  { document.getElementById('moon').classList.add('on'); document.getElementById('sky').classList.add('night2'); }
+      if(n===2)  { document.getElementById('stars').style.opacity='1'; addFireflies('#ffffff'); }
+      if(n===3)  { addAnimal('🪐',55); }
+      if(n===4)  { addAnimal('☄️',50); }
+      if(n===5)  { addAnimal('🚀',58); }
+      if(n===6)  { document.getElementById('aurora').style.opacity='1'; }
+      if(n===7)  { addAnimal('👾',32); addAnimal('👾',35); }
+      if(n===8)  { addAnimal('🛸',62); }
+      if(n===9)  { addFireflies('#ffff88'); addFireflies('#ff88ff'); }
+      if(n===10) { document.getElementById('sun').classList.add('on'); }
+      if(n===11) { addAnimal('🤖',31); }
+      if(n===12) { addFireflies('#aaaaff'); addFireflies('#ffaaaa'); }
+      if(n===13) { addAnimal('🦅',65); }
+      if(n===14) { addFireflies('#ffffff'); addFireflies('#ffdd88'); }
+      if(n===15) { setTimeout(nextScenario,1500); }
+    }
+  }
+];
+var currentScenario = 0;
+
+// Active unlocks = current scenario's list
+function getUnlocks(){ return SCENARIOS[currentScenario].unlocks; }
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var lives=3, correct=0, locked=false, currentQ=null, currentLevel=0, qInLevel=0;
+
+// ── WORLD FUNCTIONS ───────────────────────────────────────────────────────────
+function generateStars(){
+  var c=document.getElementById('stars'); c.innerHTML='';
+  for(var i=0;i<80;i++){
+    var s=document.createElement('div'); s.className='star';
+    var sz=Math.random()*2+1;
+    s.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'%;top:'+Math.random()*60+'%;--dur:'+(2+Math.random()*4)+'s;animation-delay:'+Math.random()*4+'s';
+    c.appendChild(s);
+  }
+}
+
+function clearWorldElements(){
+  var toRemove=document.querySelectorAll('.tree,.flower,.animal,.cloud,.firefly,.snowflake');
+  toRemove.forEach(function(el){ el.remove(); });
+  document.getElementById('river').style.opacity='0';
+  document.getElementById('moon').classList.remove('on');
+  document.getElementById('sun').classList.remove('on');
+  document.getElementById('mountains').style.opacity='0';
+  document.getElementById('aurora').style.opacity='0';
+  document.getElementById('sky').className='sky';
+  document.getElementById('ground').className='ground';
+  document.getElementById('stars').style.opacity='1';
+}
+
+function doUnlock(n){
+  if(n===1)  { document.getElementById('moon').classList.add('on'); document.getElementById('sky').classList.add('dawn'); }
+  if(n===2)  { document.getElementById('mountains').style.opacity='1'; }
+  if(n===3)  { addTree(); }
+  if(n===4)  { document.getElementById('river').style.opacity='1'; }
+  if(n===5)  { addTree(); addTree(); }
+  if(n===6)  { addFlowers(); }
+  if(n===7)  { addAnimal('🦋',15); }
+  if(n===8)  { addClouds(); }
+  if(n===9)  { addTree(true); addTree(true); addTree(true); }
+  if(n===10) { document.getElementById('moon').style.opacity='0'; document.getElementById('sun').classList.add('on'); document.getElementById('sky').classList.remove('dawn'); document.getElementById('sky').classList.add('day'); document.getElementById('stars').style.opacity='0'; document.getElementById('ground').classList.add('alive'); }
+  if(n===11) { addAnimal('🦌',25); }
+  if(n===12) { addFireflies(); }
+  if(n===13) { addAnimal('🦅',60); }
+  if(n===14) { document.getElementById('aurora').style.opacity='1'; }
+  if(n===15) { setTimeout(nextScenario, 1500); }
+}
+
+function nextScenario(){
+  currentScenario++;
+  if(currentScenario>=SCENARIOS.length){ currentScenario=1; } // cycle
+  // Reset unlocks counter so world rebuilds
+  correct=0; qInLevel=0; currentLevel=0;
+  clearWorldElements();
+  setTimeout(function(){
+    var sc=SCENARIOS[currentScenario];
+    sc.apply();
+    showToast('🌍','NUEVO ESCENARIO',sc.name);
+    setNarrative('El mundo renace... '+sc.name);
+    updateProgress();
+  }, 1000);
+}
+
+function addTree(tall){
+  var tree=document.createElement('div'); tree.className='tree';
+  var h=tall?rnd(80,130):rnd(50,90), w=Math.round(h*.7);
+  var colors=['#2a6a2a','#3a7a2a','#1a5a1a','#2a7a3a','#4a8a3a'];
+  var col=pick(colors);
+  tree.style.left=rnd(5,90)+'%';
+  tree.innerHTML='<div class="leaf" style="border-width:0 '+(w/2)+'px '+(h*.55)+'px '+(w/2)+'px;border-bottom-color:'+col+'"></div><div class="leaf leaf2" style="border-width:0 '+(w*.4)+'px '+(h*.45)+'px '+(w*.4)+'px;border-bottom-color:'+col+'"></div><div class="trunk" style="height:'+(h*.25)+'px;width:'+Math.max(6,w*.12)+'px"></div>';
+  document.getElementById('world').appendChild(tree);
+  setTimeout(function(){ tree.classList.add('on'); },100);
+}
+
+function addFlowers(){
+  var emojis=['🌸','🌼','🌺','💐','🌻'];
+  for(var i=0;i<6;i++){
+    (function(i){
+      var f=document.createElement('div'); f.className='flower';
+      f.textContent=pick(emojis);
+      f.style.left=rnd(5,90)+'%';
+      f.style.animationDelay=Math.random()*2+'s';
+      document.getElementById('world').appendChild(f);
+      setTimeout(function(){ f.classList.add('on'); },200+i*150);
+    })(i);
+  }
+}
+
+function addAnimal(emoji,bottom){
+  var a=document.createElement('div'); a.className='animal';
+  a.textContent=emoji; a.style.left=rnd(10,70)+'%'; a.style.bottom=bottom+'%';
+  a.style.animationDelay=Math.random()*3+'s';
+  document.getElementById('world').appendChild(a);
+  setTimeout(function(){ a.classList.add('on'); },100);
+}
+
+function addClouds(){
+  for(var i=0;i<3;i++){
+    var c=document.createElement('div'); c.className='cloud on';
+    var w=rnd(80,200);
+    c.style.cssText='width:'+w+'px;height:'+(w*.4)+'px;top:'+rnd(8,25)+'%;--dur:'+rnd(25,45)+'s;animation-delay:-'+rnd(0,20)+'s';
+    document.getElementById('world').appendChild(c);
+  }
+}
+
+function addFireflies(){
+  for(var i=0;i<12;i++){
+    var f=document.createElement('div'); f.className='firefly on';
+    f.style.cssText='left:'+rnd(10,85)+'%;bottom:'+rnd(30,55)+'%;--dur:'+(3+Math.random()*4)+'s;--dx:'+rnd(-40,40)+'px;--dy:'+rnd(-50,-10)+'px;animation-delay:'+Math.random()*5+'s';
+    document.getElementById('world').appendChild(f);
+  }
+}
+
+function addSnowflakes(){
+  var emojis=['❄️','🌨️','❄️','❄️'];
+  for(var i=0;i<15;i++){
+    var s=document.createElement('div'); s.className='snowflake on';
+    s.textContent=pick(emojis);
+    s.style.cssText='left:'+rnd(0,100)+'%;--dur:'+(4+Math.random()*6)+'s;animation-delay:-'+Math.random()*6+'s';
+    document.getElementById('world').appendChild(s);
+  }
+}
+
+// ── GAME FUNCTIONS ────────────────────────────────────────────────────────────
+function startGame(){
+  document.getElementById('start-screen').classList.add('hide');
+  generateStars();
+  updateLevelDisplay();
+  nextQuestion();
+}
+
+function restartGame(){ location.reload(); }
+
+function nextQuestion(){
+  locked=false;
+  var lvl=LEVELS[currentLevel];
+  currentQ=lvl.gen();
+
+  document.getElementById('qtext-el').textContent=currentQ.text;
+  document.getElementById('num-a').textContent=currentQ.leftLabel;
+  document.getElementById('num-b').textContent=currentQ.rightLabel;
+  var vs=document.getElementById('vsym-el');
+  vs.textContent='?'; vs.classList.remove('revealed');
+
+  var container=document.getElementById('ans-btns');
+  container.innerHTML='';
+  container.style.gridTemplateColumns='repeat('+currentQ.buttons.length+',1fr)';
+  currentQ.buttons.forEach(function(sym){
+    var btn=document.createElement('button');
+    btn.className='ans-btn';
+    btn.setAttribute('data-sym',sym);
+    btn.textContent=sym;
+    btn.addEventListener('click',function(){ answer(sym); });
+    container.appendChild(btn);
+  });
+}
+
+function answer(sym){
+  if(locked) return;
+  locked=true;
+  var ok=(sym===currentQ.correct);
+  document.querySelectorAll('#ans-btns .ans-btn').forEach(function(btn){
+    if(btn.getAttribute('data-sym')===sym) btn.classList.add(ok?'ok':'bad');
+    if(!ok && btn.getAttribute('data-sym')===currentQ.correct) btn.classList.add('ok');
+  });
+  var vs=document.getElementById('vsym-el');
+  vs.textContent=currentQ.correct; vs.classList.add('revealed');
+  if(ok){
+    correct++; qInLevel++;
+    updateProgress();
+    checkUnlock(correct);
+    checkLevelUp();
+    setTimeout(nextQuestion,900);
+  } else {
+    lives--; updateLives();
+    if(lives<=0){ setTimeout(endGame,900); return; }
+    setTimeout(nextQuestion,1100);
+  }
+}
+
+function checkUnlock(n){
+  for(var i=0;i<UNLOCKS.length;i++){
+    if(UNLOCKS[i].at===n){ doUnlock(n); showToast(UNLOCKS[i].icon,UNLOCKS[i].title,UNLOCKS[i].desc); setNarrative(UNLOCKS[i].desc); break; }
+  }
+}
+
+function checkLevelUp(){
+  var lvl=LEVELS[currentLevel];
+  if(qInLevel>=lvl.toNext && currentLevel<LEVELS.length-1){
+    currentLevel++; qInLevel=0;
+    var nl=LEVELS[currentLevel];
+    showToast('⚡','NIVEL '+nl.num+': '+nl.name,nl.desc);
+    setNarrative(nl.desc);
+    updateLevelDisplay();
+  }
+}
+
+function updateLives(){
+  var h=''; for(var i=0;i<3;i++) h+=(i<lives?'❤️':'🖤');
+  document.getElementById('lives-el').textContent=h;
+}
+
+function updateProgress(){
+  var pct=Math.min(100,Math.round(correct/UNLOCKS.length*100));
+  document.getElementById('prog-bar').style.width=pct+'%';
+}
+
+function updateLevelDisplay(){
+  var lvl=LEVELS[currentLevel];
+  document.getElementById('level-el').textContent='Nv.'+lvl.num+' '+lvl.name;
+}
+
+function setNarrative(text){
+  var el=document.getElementById('narrative-el');
+  el.style.opacity=0;
+  setTimeout(function(){ el.textContent=text; el.style.opacity=.85; },300);
+}
+
+function showToast(icon,title,desc){
+  document.getElementById('t-icon').textContent=icon;
+  document.getElementById('t-title').textContent=title;
+  document.getElementById('t-desc').textContent=desc;
+  var t=document.getElementById('toast');
+  t.classList.add('on');
+  setTimeout(function(){ t.classList.remove('on'); },2500);
+}
+
+function endGame(){
+  var previews=['🌑','🌑🌙','🌑🌙⛰️','🌱🌙⛰️','🌲🌙⛰️','🌲🌸⛰️','🌲🌸🦋','🌲🌸☀️','🌲🌳☀️','🌲🌳🦌','🌲🌳🌈'];
+  document.getElementById('end-preview').textContent=previews[Math.min(correct,previews.length-1)];
+  document.getElementById('end-score').textContent=correct+' elementos creados';
+  var msgs=['El mundo apenas comenzó a respirar.','Sembraste las primeras semillas.','El bosque recuerda tu nombre.','Tu mundo floreció con fuerza.','¡Un mundo extraordinario ha nacido!'];
+  document.getElementById('end-msg').textContent=msgs[Math.min(Math.floor(correct/3),msgs.length-1)];
+  document.getElementById('end-screen').classList.remove('hide');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click',startGame);
+document.getElementById('btn-restart').addEventListener('click',restartGame);
+</script>
+</body>
+</html>
